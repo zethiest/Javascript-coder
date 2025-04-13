@@ -1,131 +1,94 @@
- // Palabra reservada + nombre = dato 
-
- document.addEventListener("DOMContentLoaded", () => {
-    const usuarioGuardado = localStorage.getItem("usuario");
-
-    if (usuarioGuardado) {
-        const usuario = JSON.parse(usuarioGuardado);
-        Swal.fire({
-            title: `Bienvenido de nuevo, ${usuario.nombre}`,
-            text: "Ya has iniciado sesión anteriormente.",
-            icon: "success",
-            confirmButtonText: "Continuar",
-        }).then(() => {
-            subasta();
-        });
-    } else {
-        login();
-    }
-});
-
-function login() {
-    Swal.fire({
-        title: "Estas por ingresar a una subasta de productos, para identificarte necesitamos que ingreses los siguientes datos",
-        html: `
-          <input type="text" id="nombre" class="swal2-input" placeholder="Nombre">
-          <input type="text" id="apellido" class="swal2-input" placeholder="Apellido">
-          <input type="email" id="email" class="swal2-input" placeholder="Correo electrónico">`,
-        showCancelButton: true,
-        confirmButtonText: "Ingresar",
-        cancelButtonText: "Cancelar",
-        preConfirm: () => {
-            const nombre = document.getElementById("nombre").value.trim();
-            const email = document.getElementById("email").value.trim();
-            const apellido = document.getElementById("apellido").value.trim();
-
-            if (!nombre || !email || !apellido) {
-                Swal.showValidationMessage("Por favor, completa todos los campos.");
-                return false;
-            }
-            const usuario = { nombre, email, apellido };
-            localStorage.setItem("usuario", JSON.stringify(usuario));
-
-            return usuario;
-        },
-    }).then((result) => {
-        if (result.isConfirmed) {
-            Swal.fire({
-                title: `¡Bienvenido, ${result.value.nombre}!`,
-                text: "Tu sesión ha sido guardada.",
-                icon: "success",
-                confirmButtonText: "Continuar",
-            }).then(() => {
-                subasta();
-            });
-        }
-    });
-}
-
-const Product = function (nombre, precio, id) {
+const Product = function (nombre, precio, id, stock,) {
     this.nombre = nombre;
     this.precio = precio;
     this.id = id;
+    this.stock = stock;
 };
-let producto1 = new Product("Lavarropas", 10000, 1);
-let producto2 = new Product("Microondas", 5000, 2);
-let producto3 = new Product("Aspiradora", 8000, 3);
-let producto4 = new Product("Hidrolavadora", 9500, 4);
+let producto1 = new Product("Lavarropas", 10000, 1, 10);
+let producto2 = new Product("Microondas", 5000, 2, 2);
+let producto3 = new Product("Aspiradora", 8000, 3, 7);
+let producto4 = new Product("Hidrolavadora", 9500, 4, 1);
 
-const productlist = [producto1, producto2, producto3, producto4];
+let productlist = [producto1, producto2, producto3, producto4]
 
-function subasta() {
+if(localStorage.getItem("products")){
+    productlist= JSON.parse(localStorage.getItem("products"))
+}else{
+    productlist=productlist
+}
+function filtrarProductos(){
+    let palabraClave = prompt("ingresa el producto que buscas").trim().toUpperCase()
+    let resultado = productlist.filter( (x)=> x.nombre.toUpperCase().includes(palabraClave)  )
+
+    if(resultado.length >0){
+        console.table(resultado)
+    }else{
+        alert("Ningun producto coincide con los datos ingresados")
+    }
+}
+function venderProducto() {
+    let options = productlist.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock}, $${p.precio})</option>`).join("");
+
     Swal.fire({
-        title: "Selecciona un producto",
-        input: "select",
-        inputOptions: productlist.reduce((options, product) => {
-            options[product.id] = `${product.nombre} - $${product.precio}`;
-            return options;
-        }, {}),
-        inputPlaceholder: "Elige un producto",
+        title: "Vender producto",
+        html: `
+        <div>
+        <ul>
+            <li><label>Producto:</label></li>
+            <li><select id="producto-select" class="swal2-input">
+                ${options}
+            </select></li>
+            <li><label>Cantidad:</label></li>
+           <li> <input id="cantidad-input" class="swal2-input" type="number" min="1" step="1"></li>
+            <li><label>Monto pagado:</label></li>
+            <li><input id="monto-input" class="swal2-input" type="number" min="0" step="0.01"></li>
+           </ul></div>
+        `,
         showCancelButton: true,
-        confirmButtonText: "Seleccionar",
-        preConfirm: (idInput) => {
-            const product = productlist.find((p) => p.id == idInput);
-            if (!product) {
-                Swal.showValidationMessage("El ID no es válido");
-                return false;
+        confirmButtonText: "Vender",
+        cancelButtonText: "Cancelar"
+    }).then(result => {
+        if (result.isConfirmed) {
+            let idSeleccionado = parseInt(document.getElementById("producto-select").value);
+            let cantidad = parseInt(document.getElementById("cantidad-input").value);
+            let montoPagado = parseFloat(document.getElementById("monto-input").value);
+
+            let producto = productlist.find(p => p.id === idSeleccionado);
+
+            if (isNaN(cantidad) || cantidad <= 0 || isNaN(montoPagado) || montoPagado <= 0) {
+                Swal.fire("Error", "Datos inválidos", "error");
+                return;
             }
-            return product;
-        },
-    }).then((result) => {
-        if (result.isConfirmed && result.value) {
-            const selectedProduct = result.value;
+
+            if (producto.stock < cantidad) {
+                Swal.fire("Stock insuficiente", `Solo hay ${producto.stock} unidades disponibles`, "warning");
+                return;
+            }
+
+            let totalVenta = producto.precio * cantidad;
+
+            if (montoPagado < totalVenta) {
+                Swal.fire("Monto insuficiente", `El total es $${totalVenta} y pagaste $${montoPagado}`, "error");
+                return;
+            }
+
+            producto.stock -= cantidad;
+            localStorage.setItem("products", JSON.stringify(productlist));
 
             Swal.fire({
-                title: `Ingresa tu oferta para el ${selectedProduct.nombre}`,
-                input: "number",
-                inputPlaceholder: "Ingresa tu oferta en $",
-                showCancelButton: true,
-                confirmButtonText: "Ofertar",
-                preConfirm: (ofertaUsuario) => {
-                    ofertaUsuario = parseFloat(ofertaUsuario);
-                    if (isNaN(ofertaUsuario) || ofertaUsuario <= 0) {
-                        Swal.showValidationMessage("Por favor ingresa un monto válido.");
-                        return false;
-                    }
-                    return ofertaUsuario;
-                },
-            }).then((ofertaResult) => {
-                if (ofertaResult.isConfirmed) {
-                    const ofertaUsuario = ofertaResult.value;
-
-                    if (ofertaUsuario < selectedProduct.precio) {
-                        Swal.fire(
-                            "Oferta rechazada",
-                            "La oferta ingresada es menor al precio requerido.",
-                            "error"
-                        ).then(() => {
-                            subasta();
-                        });
-                    } else {
-                        Swal.fire(
-                            "Oferta aceptada",
-                            "Tu oferta es correcta y aceptada. Por favor, omunicate con nosotros para organizar el envio.",
-                            "success"
-                        );
-                    }
-                }
+                icon: "success",
+                title: "Venta realizada",
+                html: `
+                    Vendiste ${cantidad} unidad(es) de <strong>${producto.nombre}</strong><br>
+                    Precio unitario: $${producto.precio}<br>
+                    Total: $${totalVenta}<br>
+                `,
+                timer: 3500
             });
+
+            console.table(productlist);
         }
     });
 }
+let boton = document.getElementById("boton")
+boton.addEventListener("click",venderProducto)

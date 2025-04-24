@@ -1,0 +1,44 @@
+[
+    {
+      "nombre": "Lavarropas",
+      "precio": 10000,
+      "marca": "Samsung",
+      "id": 1,
+      "stock": 10
+    },
+    {
+      "nombre": "Microondas",
+      "precio": 5000,
+      "marca": "Philco",
+      "id": 2,
+      "stock": 2
+    },
+    {
+      "nombre": "Aspiradora",
+      "precio": 8000,
+      "marca": "Philco",
+      "id": 3,
+      "stock": 7
+    },
+    {
+      "nombre": "Hidrolavadora",
+      "precio": 9500,
+      "marca": "Philco",
+      "id": 4,
+      "stock": 1
+    },
+    {
+      "nombre": "Televisor",
+      "marca": "Samsung",
+      "precio": 20000,
+      "id": 5,
+      "stock": 5
+    },
+    {
+      "nombre": "Aire Acondicionado",
+      "marca": "Philco",
+      "precio": 30000,
+      "id": 6,
+      "stock": 5
+    }
+]
